@@ -1,2 +1,6 @@
 .superpowers/
 .obsidian/
+node_modules/
+dist/
+*.tsbuildinfo
+playwright-report/
