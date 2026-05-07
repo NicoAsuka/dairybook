@@ -124,6 +124,31 @@ function createStore() {
     await idb.cacheMonth(month, fresh);
   }
 
+  function monthsBetween(start: string, end: string): string[] {
+    const out: string[] = [];
+    const parts1 = start.split("-").map(Number);
+    const parts2 = end.split("-").map(Number);
+    let y = parts1[0]!, m = parts1[1]!;
+    const ey = parts2[0]!, em = parts2[1]!;
+    while (y < ey || (y === ey && m <= em)) {
+      out.push(`${y}-${String(m).padStart(2, "0")}`);
+      m++;
+      if (m > 12) { m = 1; y++; }
+    }
+    return out;
+  }
+
+  async function prefetchMonths(from: string, to: string): Promise<void> {
+    if (!client) return;
+    const ymStart = from.slice(0, 7);
+    const ymEnd = to.slice(0, 7);
+    const months = monthsBetween(ymStart, ymEnd);
+    await Promise.all(months.map(async (m) => {
+      if (state.months[m]) return;
+      await loadMonth(m);
+    }));
+  }
+
   async function selectDate(ymd: string): Promise<void> {
     state.selectedDate = ymd;
     const m = monthOf(ymd);
@@ -264,6 +289,7 @@ function createStore() {
     logout,
     selectDate,
     loadMonth,
+    prefetchMonths,
     entriesForSelectedDate,
     upsertEntry,
     deleteEntry,
