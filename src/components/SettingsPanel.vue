@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { useStore } from "@/lib/store";
 import TagBadge from "./TagBadge.vue";
 import type { Tag } from "@/lib/types";
+import { buildJsonExport, buildMarkdownExport, downloadBlob } from "@/lib/export";
 
 defineEmits<{ close: [] }>();
 const store = useStore();
@@ -40,6 +41,24 @@ function remove(t: Tag) {
 function logout() {
   if (confirm("退出登录？本设备将清除 token。")) store.logout();
 }
+
+async function exportJson() {
+  await loadAll();
+  const blob = buildJsonExport(Object.values(store.state.months), store.state.tags.data);
+  downloadBlob(blob, `dairybook-${new Date().toISOString().slice(0,10)}.json`);
+}
+
+async function exportMd() {
+  await loadAll();
+  const md = buildMarkdownExport(Object.values(store.state.months), store.state.tags.data);
+  downloadBlob(new Blob([md], { type: "text/markdown" }), `dairybook-${new Date().toISOString().slice(0,10)}.md`);
+}
+
+async function loadAll() {
+  const today = new Date().toISOString().slice(0, 10);
+  const yearAgo = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
+  await store.prefetchMonths(yearAgo, today);
+}
 </script>
 
 <template>
@@ -72,6 +91,15 @@ function logout() {
     </section>
 
     <section>
+      <h3>导出</h3>
+      <p class="muted">导出最近 12 个月的所有 entry。下载到本地，用于备份。</p>
+      <div class="row">
+        <button @click="exportMd">导出 Markdown</button>
+        <button @click="exportJson">导出 JSON</button>
+      </div>
+    </section>
+
+    <section>
       <h3>账号</h3>
       <p v-if="store.state.auth.kind === 'logged-in'" class="muted">@{{ store.state.auth.user.login }}</p>
       <button class="danger" @click="logout">退出登录</button>
@@ -90,4 +118,5 @@ td { padding: 4px; vertical-align: middle; }
 .primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .danger { color: #c0392b; }
 .muted { color: var(--text-muted); }
+.row { display: flex; gap: 8px; align-items: center; }
 </style>
