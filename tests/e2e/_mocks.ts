@@ -51,8 +51,23 @@ export async function mockGitHub(page: Page, opts: {
   let currentSha = monthSha;
   let currentData = opts.monthData ?? { version: 1, month: "2026-05", days: {} };
 
-  await page.route(/api\.github\.com\/repos\/[^/]+\/dairybook-data\/contents\/data\/.+\.json/, async (route) => {
+  await page.route(/api\.github\.com\/repos\/[^/]+\/dairybook-data\/contents\/data\/(.+)\.json/, async (route) => {
     if (route.request().method() === "GET") {
+      const match = route.request().url().match(/contents\/data\/(.+)\.json/);
+      const requestedMonth = match?.[1];
+      if (requestedMonth && requestedMonth !== currentData.month) {
+        const emptyMonth = { version: 1, month: requestedMonth, days: {} };
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            sha: `empty-${requestedMonth}`,
+            encoding: "base64",
+            content: Buffer.from(JSON.stringify(emptyMonth)).toString("base64"),
+          }),
+        });
+        return;
+      }
       route.fulfill({
         status: 200,
         contentType: "application/json",
