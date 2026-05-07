@@ -1,4 +1,4 @@
-import type { Entry, MonthData } from "./types";
+import type { Entry, MonthData, Tag, TagsData } from "./types";
 
 type EntryMap = Map<string, Entry>;
 
@@ -69,4 +69,46 @@ export function mergeMonths(base: MonthData, local: MonthData, remote: MonthData
     days[day] = { entries: merged };
   }
   return { version: 1, month: local.month, days };
+}
+
+function indexTags(td: TagsData): Map<string, Tag> {
+  const m = new Map<string, Tag>();
+  for (const t of td.tags) m.set(t.id, t);
+  return m;
+}
+
+function newerTag(a: Tag, b: Tag): Tag {
+  return a.updatedAt >= b.updatedAt ? a : b;
+}
+
+export function mergeTagsData(base: TagsData, local: TagsData, remote: TagsData): TagsData {
+  const bMap = indexTags(base);
+  const lMap = indexTags(local);
+  const rMap = indexTags(remote);
+  const ids = new Set<string>([...bMap.keys(), ...lMap.keys(), ...rMap.keys()]);
+  const out: Tag[] = [];
+
+  for (const id of ids) {
+    const b = bMap.get(id);
+    const l = lMap.get(id);
+    const r = rMap.get(id);
+
+    if (!b && l && r) out.push(newerTag(l, r));
+    else if (!b && l) out.push(l);
+    else if (!b && r) out.push(r);
+    else if (b && l && r) {
+      const localChanged = l.updatedAt !== b.updatedAt;
+      const remoteChanged = r.updatedAt !== b.updatedAt;
+      if (localChanged && remoteChanged) out.push(newerTag(l, r));
+      else if (localChanged) out.push(l);
+      else out.push(r);
+    } else if (b && l && !r) {
+      out.push(l);
+    } else if (b && !l && r) {
+      out.push(r);
+    }
+  }
+
+  out.sort((a, b) => a.id.localeCompare(b.id));
+  return { version: 1, tags: out };
 }

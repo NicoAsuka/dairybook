@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { mergeMonths } from "@/lib/merge";
-import { makeEntry, makeMonth } from "../fixtures/month";
+import { mergeMonths, mergeTagsData } from "@/lib/merge";
+import { makeEntry, makeMonth, makeTag, makeTagsData } from "../fixtures/month";
 
 describe("mergeMonths", () => {
   it("returns local when remote equals base (nothing to merge)", () => {
@@ -113,5 +113,39 @@ describe("mergeMonths", () => {
     });
     const merged = mergeMonths(base, local, remote);
     expect(merged.days["2026-05-07"]?.entries.map((e) => e.id)).toEqual(["y", "x"]);
+  });
+});
+
+describe("mergeTagsData", () => {
+  it("returns local-only when nothing remote/base diverges", () => {
+    const base = makeTagsData([makeTag({ id: "a", name: "old", updatedAt: "T0" })]);
+    const local = makeTagsData([makeTag({ id: "a", name: "local", updatedAt: "T1" })]);
+    const merged = mergeTagsData(base, local, base);
+    expect(merged.tags[0]?.name).toBe("local");
+  });
+
+  it("keeps both sides' new tags", () => {
+    const base = makeTagsData([]);
+    const local = makeTagsData([makeTag({ id: "L", name: "L", updatedAt: "T1" })]);
+    const remote = makeTagsData([makeTag({ id: "R", name: "R", updatedAt: "T1" })]);
+    const merged = mergeTagsData(base, local, remote);
+    const ids = merged.tags.map((t) => t.id).sort();
+    expect(ids).toEqual(["L", "R"]);
+  });
+
+  it("on same id concurrent edit, newer updatedAt wins", () => {
+    const base = makeTagsData([makeTag({ id: "a", name: "base", updatedAt: "T0" })]);
+    const local = makeTagsData([makeTag({ id: "a", name: "local", updatedAt: "T1" })]);
+    const remote = makeTagsData([makeTag({ id: "a", name: "remote", updatedAt: "T2" })]);
+    const merged = mergeTagsData(base, local, remote);
+    expect(merged.tags[0]?.name).toBe("remote");
+  });
+
+  it("soft-deleted tag stays as deleted (deletedAt preserved by max updatedAt)", () => {
+    const base = makeTagsData([makeTag({ id: "a", updatedAt: "T0" })]);
+    const local = makeTagsData([makeTag({ id: "a", updatedAt: "T1", deletedAt: "T1" })]);
+    const remote = makeTagsData([makeTag({ id: "a", name: "renamed", updatedAt: "T0" })]);
+    const merged = mergeTagsData(base, local, remote);
+    expect(merged.tags[0]?.deletedAt).toBe("T1");
   });
 });
