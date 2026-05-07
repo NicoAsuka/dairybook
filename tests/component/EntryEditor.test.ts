@@ -25,7 +25,7 @@ describe("EntryEditor", () => {
     const w = mount(EntryEditor, { props: { entry: makeEntry({ id: "a", text: "old", tagId: null }) } });
     await w.find("textarea").setValue("new");
     const tagButtons = w.findAll(".tag-row button");
-    await tagButtons[1].trigger("click");
+    await tagButtons[1]!.trigger("click");
     await w.find('button[data-action="save"]').trigger("click");
     const e = w.emitted("save")?.[0]?.[0] as any;
     expect(e.text).toBe("new");

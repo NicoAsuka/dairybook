@@ -13,10 +13,10 @@ md.validateLink = () => true;
 const defaultLinkOpen = md.renderer.rules.link_open ??
   ((tokens, idx, opts, _env, self) => self.renderToken(tokens, idx, opts));
 md.renderer.rules.link_open = (tokens, idx, opts, env, self) => {
-  const t = tokens[idx];
+  const t = tokens[idx]!;
   const hrefIdx = t.attrIndex("href");
   if (hrefIdx >= 0) {
-    const href = t.attrs![hrefIdx]![1].toLowerCase().trim();
+    const href = t.attrs![hrefIdx]![1]!.toLowerCase().trim();
     if (href.startsWith("javascript:") || href.startsWith("data:") || href.startsWith("vbscript:")) {
       t.attrs![hrefIdx]![1] = "#";
     }

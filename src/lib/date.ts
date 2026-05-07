@@ -14,8 +14,8 @@ export function formatYMD(d: Date): string {
 }
 
 export function parseYMD(s: string): Date {
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d));
+  const parts = s.split("-").map(Number);
+  return new Date(Date.UTC(parts[0]!, parts[1]! - 1, parts[2]!));
 }
 
 export function addDays(d: Date, n: number): Date {

@@ -10,7 +10,9 @@ const emit = defineEmits<{ "click-entry": [Entry] }>();
 const entries = computed(() => store.entriesForSelectedDate());
 
 function timeToRow(t: string, isEnd = false): number {
-  const [h, m] = t.split(":").map(Number);
+  const parts = t.split(":").map(Number);
+  const h = parts[0]!;
+  const m = parts[1]!;
   const slot = h * 2 + (m >= 30 ? 1 : 0);
   return slot + 1 + (isEnd && m % 30 !== 0 ? 1 : 0);
 }
