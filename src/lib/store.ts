@@ -4,7 +4,8 @@ import { SyncEngine } from "./sync";
 import { newId } from "./id";
 import { formatYMD, monthOf } from "./date";
 import * as idb from "./idb";
-import type { AuthState, Entry, MonthDoc, RepoState, SyncStatus } from "./types";
+import type { AuthState, Entry, MonthDoc, RepoState, SyncStatus, Tag, TagsData, TagsDoc } from "./types";
+import { mergeTagsData } from "./merge";
 
 const DATA_REPO = "dairybook-data";
 
@@ -14,6 +15,8 @@ interface StoreState {
   selectedDate: string;
   months: Record<string, MonthDoc>;
   syncStatus: SyncStatus;
+  tags: TagsDoc;
+  tagsSyncStatus: SyncStatus;
 }
 
 let _instance: ReturnType<typeof createStore> | null = null;
@@ -25,6 +28,8 @@ function createStore() {
     selectedDate: formatYMD(new Date()),
     months: {},
     syncStatus: { kind: "idle" },
+    tags: { data: { version: 1, tags: [] }, sha: null },
+    tagsSyncStatus: { kind: "idle" },
   });
 
   let client: GitHubClient | null = null;
@@ -66,7 +71,12 @@ function createStore() {
         state.auth = { kind: "logged-in", token, user };
         state.repo = await detectRepo(token, user.login);
         setClientFromAuth();
-        if (state.repo.kind === "ready") await loadMonth(monthOf(state.selectedDate));
+        if (state.repo.kind === "ready") {
+          await Promise.all([
+            loadMonth(monthOf(state.selectedDate)),
+            loadTags(),
+          ]);
+        }
       } catch {
         idb.clearToken();
         state.auth = { kind: "anonymous" };
@@ -87,7 +97,12 @@ function createStore() {
     state.auth = { kind: "logged-in", token, user };
     state.repo = await detectRepo(token, user.login);
     setClientFromAuth();
-    if (state.repo.kind === "ready") await loadMonth(monthOf(state.selectedDate));
+    if (state.repo.kind === "ready") {
+      await Promise.all([
+        loadMonth(monthOf(state.selectedDate)),
+        loadTags(),
+      ]);
+    }
   }
 
   async function logout(): Promise<void> {
@@ -158,6 +173,72 @@ function createStore() {
     };
   }
 
+  let tagsBase: TagsData = state.tags.data;
+  let tagsTimer: ReturnType<typeof setTimeout> | null = null;
+
+  async function loadTags(): Promise<void> {
+    if (!client) return;
+    const fresh = await client.getTags();
+    state.tags = fresh;
+    tagsBase = fresh.data;
+  }
+
+  function flushTags(): void {
+    if (!client) return;
+    state.tagsSyncStatus = { kind: "saving" };
+    const snapshot = JSON.parse(JSON.stringify(state.tags.data)) as TagsData;
+    const sha = state.tags.sha;
+    void (async () => {
+      try {
+        const r = await client!.putTags(snapshot, sha);
+        state.tags.sha = r.sha;
+        tagsBase = snapshot;
+        state.tagsSyncStatus = { kind: "saved", at: Date.now() };
+      } catch (err) {
+        const e = err as Error & { status?: number };
+        if (e.status === 409) {
+          const remote = await client!.getTags();
+          const merged = mergeTagsData(tagsBase, snapshot, remote.data);
+          state.tags = { data: merged, sha: remote.sha };
+          scheduleTagsSave();
+        } else {
+          state.tagsSyncStatus = { kind: "error", message: e.message, retryable: true };
+        }
+      }
+    })();
+  }
+
+  function scheduleTagsSave(): void {
+    if (tagsTimer) clearTimeout(tagsTimer);
+    tagsTimer = setTimeout(() => { tagsTimer = null; flushTags(); }, 1000);
+  }
+
+  function upsertTag(tag: Tag): void {
+    const idx = state.tags.data.tags.findIndex((t) => t.id === tag.id);
+    if (idx >= 0) state.tags.data.tags[idx] = tag;
+    else state.tags.data.tags.push(tag);
+    scheduleTagsSave();
+  }
+
+  function deleteTag(id: string): void {
+    const t = state.tags.data.tags.find((t) => t.id === id);
+    if (!t) return;
+    const now = new Date().toISOString();
+    t.deletedAt = now;
+    t.updatedAt = now;
+    scheduleTagsSave();
+  }
+
+  function activeTags(): Tag[] {
+    return state.tags.data.tags.filter((t) => t.deletedAt === null);
+  }
+
+  function getTagById(id: string | null): Tag | null {
+    if (!id) return null;
+    const t = state.tags.data.tags.find((t) => t.id === id);
+    return t && t.deletedAt === null ? t : null;
+  }
+
   return {
     state,
     bootFromCache,
@@ -169,6 +250,7 @@ function createStore() {
     upsertEntry,
     deleteEntry,
     newEntry,
+    loadTags, upsertTag, deleteTag, activeTags, getTagById,
   };
 }
 
