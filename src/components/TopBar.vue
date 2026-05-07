@@ -1,19 +1,15 @@
 <script setup lang="ts">
 import DateNav from "./DateNav.vue";
+import SyncStatusPill from "./SyncStatusPill.vue";
 import { useStore } from "@/lib/store";
 import { computed } from "vue";
+
+defineEmits<{ "open-settings": [] }>();
 
 const store = useStore();
 const userLabel = computed(() =>
   store.state.auth.kind === "logged-in" ? store.state.auth.user.login : "",
 );
-const syncLabel = computed(() => {
-  const s = store.state.syncStatus;
-  if (s.kind === "saving") return "保存中…";
-  if (s.kind === "saved") return "已保存";
-  if (s.kind === "error") return "保存失败";
-  return "";
-});
 </script>
 
 <template>
@@ -23,8 +19,9 @@ const syncLabel = computed(() => {
     </div>
     <div class="center"><DateNav /></div>
     <div class="right">
-      <span class="sync">{{ syncLabel }}</span>
+      <SyncStatusPill />
       <span class="user" v-if="userLabel">@{{ userLabel }}</span>
+      <button class="icon" @click="$emit('open-settings')" aria-label="设置">⚙</button>
     </div>
   </header>
 </template>
@@ -39,5 +36,5 @@ const syncLabel = computed(() => {
 .center { justify-self: center; }
 .right { justify-self: end; display: flex; gap: 12px; align-items: center; color: var(--text-muted); }
 .brand { font-size: 16px; }
-.sync { font-size: 12px; }
+.icon { padding: 4px 8px; }
 </style>

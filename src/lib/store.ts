@@ -239,6 +239,17 @@ function createStore() {
     return t && t.deletedAt === null ? t : null;
   }
 
+  function retryFailed(): void {
+    if (sync) {
+      const m = monthOf(state.selectedDate);
+      const doc = state.months[m];
+      if (doc) sync.scheduleSave(m, doc);
+    }
+    if (state.tagsSyncStatus.kind === "error") {
+      scheduleTagsSave();
+    }
+  }
+
   return {
     state,
     bootFromCache,
@@ -251,6 +262,7 @@ function createStore() {
     deleteEntry,
     newEntry,
     loadTags, upsertTag, deleteTag, activeTags, getTagById,
+    retryFailed,
   };
 }
 
