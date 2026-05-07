@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { http, HttpResponse } from "msw";
 import { mswServer } from "../setup";
 import { GitHubClient, GitHubError } from "@/lib/github";
+import type { TagsData } from "@/lib/types";
 
 const owner = "alice";
 const repo = "dairybook-data";
@@ -94,5 +95,52 @@ describe("GitHubClient.checkRepo", () => {
     );
     const client = new GitHubClient({ token, owner, repo });
     expect(await client.checkRepo()).toBe("missing");
+  });
+});
+
+describe("GitHubClient.getTags", () => {
+  it("returns parsed JSON + sha when 200", async () => {
+    mswServer.use(
+      http.get(`https://api.github.com/repos/${owner}/${repo}/contents/tags.json`, () =>
+        HttpResponse.json({
+          sha: "tag-sha",
+          encoding: "base64",
+          content: btoa(JSON.stringify({ version: 1, tags: [] })),
+        }),
+      ),
+    );
+    const client = new GitHubClient({ token, owner, repo });
+    const doc = await client.getTags();
+    expect(doc.sha).toBe("tag-sha");
+    expect(doc.data.tags).toEqual([]);
+  });
+
+  it("returns null sha + empty tags when 404", async () => {
+    mswServer.use(
+      http.get(`https://api.github.com/repos/${owner}/${repo}/contents/tags.json`, () =>
+        HttpResponse.json({ message: "Not Found" }, { status: 404 }),
+      ),
+    );
+    const client = new GitHubClient({ token, owner, repo });
+    const doc = await client.getTags();
+    expect(doc.sha).toBeNull();
+    expect(doc.data.tags).toEqual([]);
+  });
+});
+
+describe("GitHubClient.putTags", () => {
+  it("PUT with sha", async () => {
+    let received: unknown;
+    mswServer.use(
+      http.put(`https://api.github.com/repos/${owner}/${repo}/contents/tags.json`, async ({ request }) => {
+        received = await request.json();
+        return HttpResponse.json({ content: { sha: "newtag" } });
+      }),
+    );
+    const client = new GitHubClient({ token, owner, repo });
+    const data: TagsData = { version: 1, tags: [] };
+    const r = await client.putTags(data, "oldtag");
+    expect(r.sha).toBe("newtag");
+    expect((received as any).sha).toBe("oldtag");
   });
 });

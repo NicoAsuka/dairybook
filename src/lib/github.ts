@@ -1,4 +1,4 @@
-import type { MonthData, MonthDoc } from "./types";
+import type { MonthData, MonthDoc, TagsData, TagsDoc } from "./types";
 
 const API = "https://api.github.com";
 
@@ -74,6 +74,38 @@ export class GitHubClient {
     if (res.status === 200) return "ready";
     if (res.status === 404 || res.status === 403) return "missing";
     throw new GitHubError(res.status, await res.text());
+  }
+
+  private tagsPath(): string {
+    return `${API}/repos/${this.cfg.owner}/${this.cfg.repo}/contents/tags.json`;
+  }
+
+  async getTags(): Promise<TagsDoc> {
+    const res = await fetch(this.tagsPath(), { headers: this.headers() });
+    if (res.status === 404) {
+      return { data: { version: 1, tags: [] }, sha: null };
+    }
+    if (!res.ok) throw new GitHubError(res.status, await res.text());
+    const body = (await res.json()) as { sha: string; content: string };
+    return {
+      data: JSON.parse(base64ToUtf8(body.content.replace(/\n/g, ""))) as TagsData,
+      sha: body.sha,
+    };
+  }
+
+  async putTags(data: TagsData, sha: string | null): Promise<{ sha: string }> {
+    const res = await fetch(this.tagsPath(), {
+      method: "PUT",
+      headers: { ...this.headers(), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: "tags: update",
+        content: utf8ToBase64(JSON.stringify(data, null, 2)),
+        ...(sha ? { sha } : {}),
+      }),
+    });
+    if (!res.ok) throw new GitHubError(res.status, await res.text());
+    const body = (await res.json()) as { content: { sha: string } };
+    return { sha: body.content.sha };
   }
 
   async getViewer(): Promise<{ login: string }> {
