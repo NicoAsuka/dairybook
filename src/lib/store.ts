@@ -6,6 +6,7 @@ import { formatYMD, monthOf } from "./date";
 import * as idb from "./idb";
 import type { AuthState, Entry, MonthDoc, RepoState, SyncStatus, Tag, TagsData, TagsDoc } from "./types";
 import { mergeTagsData } from "./merge";
+import { onReconnect } from "./network";
 
 const DATA_REPO = "dairybook-data";
 
@@ -249,6 +250,12 @@ function createStore() {
       scheduleTagsSave();
     }
   }
+
+  onReconnect(() => {
+    if (state.syncStatus.kind === "error" || state.tagsSyncStatus.kind === "error") {
+      retryFailed();
+    }
+  });
 
   return {
     state,

@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useStore } from "@/lib/store";
+import { useOnlineStatus } from "@/lib/network";
 
 const store = useStore();
+const online = useOnlineStatus();
 
-interface View { label: string; kind: "saving" | "saved" | "error" | "idle" }
+interface View { label: string; kind: "saving" | "saved" | "error" | "offline" | "idle" }
 
 const view = computed<View>(() => {
+  if (!online.value) return { label: "离线", kind: "offline" };
   const e = store.state.syncStatus;
   const t = store.state.tagsSyncStatus;
   if (e.kind === "error" || t.kind === "error") {
@@ -49,5 +52,6 @@ function onClick() {
 .pill.saved { color: #4caf7a; }
 .pill.error { color: #c0392b; cursor: pointer; border-color: #c0392b40; }
 .pill.error:hover { background: #c0392b10; }
+.pill.offline { color: #d97706; border-color: #d9770640; background: #fff7ed; }
 .pill:disabled { cursor: default; }
 </style>
