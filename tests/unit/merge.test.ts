@@ -55,6 +55,32 @@ describe("mergeMonths", () => {
     expect(merged.days["2026-05-07"]?.entries.map((e) => e.text)).toEqual(["edited"]);
   });
 
+  it("preserves the edited side when local edits and remote deletes", () => {
+    const base = makeMonth("2026-05", {
+      "2026-05-07": { entries: [makeEntry({ id: "a", text: "base" })] },
+    });
+    const local = makeMonth("2026-05", {
+      "2026-05-07": { entries: [makeEntry({ id: "a", text: "edited", updatedAt: "2026-05-07T10:00:00Z" })] },
+    });
+    const remote = makeMonth("2026-05", {
+      "2026-05-07": { entries: [] },  // remote deleted
+    });
+    const merged = mergeMonths(base, local, remote);
+    expect(merged.days["2026-05-07"]?.entries.map((e) => e.text)).toEqual(["edited"]);
+  });
+
+  it("keeps newer when both sides add entry with same id", () => {
+    const base = makeMonth("2026-05", { "2026-05-07": { entries: [] } });
+    const local = makeMonth("2026-05", {
+      "2026-05-07": { entries: [makeEntry({ id: "same", text: "local", updatedAt: "2026-05-07T10:00:00Z" })] },
+    });
+    const remote = makeMonth("2026-05", {
+      "2026-05-07": { entries: [makeEntry({ id: "same", text: "remote", updatedAt: "2026-05-07T11:00:00Z" })] },
+    });
+    const merged = mergeMonths(base, local, remote);
+    expect(merged.days["2026-05-07"]?.entries[0]?.text).toBe("remote");
+  });
+
   it("removes when both sides delete the same entry", () => {
     const base = makeMonth("2026-05", {
       "2026-05-07": { entries: [makeEntry({ id: "a" })] },
