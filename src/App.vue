@@ -5,12 +5,15 @@ import TopBar from "@/components/TopBar.vue";
 import MiniCalendar from "@/components/MiniCalendar.vue";
 import Timeline from "@/components/Timeline.vue";
 import EntryEditor from "@/components/EntryEditor.vue";
+import TagSummary from "@/components/TagSummary.vue";
+import SettingsPanel from "@/components/SettingsPanel.vue";
 import LoginPanel from "@/components/LoginPanel.vue";
 import OnboardingPanel from "@/components/OnboardingPanel.vue";
 import type { Entry } from "@/lib/types";
 
 const store = useStore();
 const editing = ref<Entry | null>(null);
+const settingsOpen = ref(false);
 
 onMounted(() => store.bootFromCache());
 
@@ -36,9 +39,10 @@ function onDelete() {
   <LoginPanel v-if="view === 'login'" />
   <OnboardingPanel v-else-if="view === 'onboard'" />
   <div v-else class="layout">
-    <TopBar />
+    <TopBar @open-settings="settingsOpen = true" />
     <aside class="side">
       <MiniCalendar />
+      <TagSummary />
       <div class="quick">
         <button @click="newEntryAt('09:00','10:00')">+ 新增条目</button>
       </div>
@@ -52,6 +56,12 @@ function onDelete() {
         <EntryEditor :entry="editing" @save="onSave" @delete="onDelete" @cancel="closeEditor" />
       </div>
     </div>
+
+    <div v-if="settingsOpen" class="modal-bg" @click.self="settingsOpen = false">
+      <div class="modal">
+        <SettingsPanel @close="settingsOpen = false" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -62,7 +72,7 @@ function onDelete() {
 .main { overflow-y: auto; }
 .quick { padding: 12px; border-top: 1px solid var(--border); }
 .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.3); display: grid; place-items: center; z-index: 100; }
-.modal { background: var(--bg-elevated); border-radius: var(--radius); box-shadow: 0 10px 30px rgba(0,0,0,.2); }
+.modal { background: var(--bg-elevated); border-radius: var(--radius); box-shadow: 0 10px 30px rgba(0,0,0,.2); max-height: 90vh; overflow: auto; }
 
 @media (max-width: 720px) {
   .layout { grid-template-columns: 1fr; }
