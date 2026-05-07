@@ -7,6 +7,8 @@ import Timeline from "@/components/Timeline.vue";
 import EntryEditor from "@/components/EntryEditor.vue";
 import TagSummary from "@/components/TagSummary.vue";
 import SettingsPanel from "@/components/SettingsPanel.vue";
+import SearchPanel from "@/components/SearchPanel.vue";
+import StatsModal from "@/components/StatsModal.vue";
 import LoginPanel from "@/components/LoginPanel.vue";
 import OnboardingPanel from "@/components/OnboardingPanel.vue";
 import type { Entry } from "@/lib/types";
@@ -14,6 +16,8 @@ import type { Entry } from "@/lib/types";
 const store = useStore();
 const editing = ref<Entry | null>(null);
 const settingsOpen = ref(false);
+const searchOpen = ref(false);
+const statsOpen = ref(false);
 
 onMounted(() => store.bootFromCache());
 
@@ -39,7 +43,11 @@ function onDelete() {
   <LoginPanel v-if="view === 'login'" />
   <OnboardingPanel v-else-if="view === 'onboard'" />
   <div v-else class="layout">
-    <TopBar @open-settings="settingsOpen = true" />
+    <TopBar
+      @open-settings="settingsOpen = true"
+      @open-search="searchOpen = true"
+      @open-stats="statsOpen = true"
+    />
     <aside class="side">
       <MiniCalendar />
       <TagSummary />
@@ -60,6 +68,17 @@ function onDelete() {
     <div v-if="settingsOpen" class="modal-bg" @click.self="settingsOpen = false">
       <div class="modal">
         <SettingsPanel @close="settingsOpen = false" />
+      </div>
+    </div>
+
+    <SearchPanel v-if="searchOpen"
+      @close="searchOpen = false"
+      @jump="(date: string) => { store.selectDate(date); searchOpen = false; }"
+    />
+
+    <div v-if="statsOpen" class="modal-bg" @click.self="statsOpen = false">
+      <div class="modal">
+        <StatsModal @close="statsOpen = false" />
       </div>
     </div>
   </div>

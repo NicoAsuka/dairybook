@@ -4,7 +4,11 @@ import SyncStatusPill from "./SyncStatusPill.vue";
 import { useStore } from "@/lib/store";
 import { computed } from "vue";
 
-defineEmits<{ "open-settings": [] }>();
+defineEmits<{
+  "open-settings": [];
+  "open-search": [];
+  "open-stats": [];
+}>();
 
 const store = useStore();
 const userLabel = computed(() =>
@@ -21,6 +25,8 @@ const userLabel = computed(() =>
     <div class="right">
       <SyncStatusPill />
       <span class="user" v-if="userLabel">@{{ userLabel }}</span>
+      <button class="icon" @click="$emit('open-search')" aria-label="搜索">🔍</button>
+      <button class="icon" @click="$emit('open-stats')" aria-label="统计">📊</button>
       <button class="icon" @click="$emit('open-settings')" aria-label="设置">⚙</button>
     </div>
   </header>
