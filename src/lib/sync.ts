@@ -73,7 +73,6 @@ export class SyncEngine {
         return this.flush(month, attempt + 1);
       }
       this.deps.onStatus?.("error", err as Error);
-      throw err;
     }
   }
 
