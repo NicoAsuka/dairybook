@@ -44,3 +44,17 @@ export type SyncStatus =
   | { kind: "saving" }
   | { kind: "saved"; at: number } // unix ms
   | { kind: "error"; message: string; retryable: boolean };
+
+// === Plan 2: Tags ===
+export interface Tag {
+  id: string;                 // 短英文 slug，不可改
+  name: string;
+  color: string;              // CSS hex "#RRGGBB"
+  updatedAt: string;          // ISO 8601 UTC
+  deletedAt: string | null;   // 软删除
+}
+export interface TagsData {
+  version: 1;
+  tags: Tag[];
+}
+export interface TagsDoc { data: TagsData; sha: string | null; }
