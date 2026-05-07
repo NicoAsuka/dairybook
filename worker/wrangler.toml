@@ -1,0 +1,3 @@
+name = "dairybook-auth"
+main = "src/index.ts"
+compatibility_date = "2026-05-07"

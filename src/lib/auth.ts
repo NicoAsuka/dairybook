@@ -8,10 +8,24 @@ export interface DeviceFlowStart {
 
 const SCOPE = "repo";
 
+function endpoints(proxyBase?: string) {
+  const base = proxyBase ?? "https://github.com";
+  return {
+    deviceCode: proxyBase
+      ? `${base}/device/code`
+      : `${base}/login/device/code`,
+    accessToken: proxyBase
+      ? `${base}/access_token`
+      : `${base}/login/oauth/access_token`,
+  };
+}
+
 export async function startDeviceFlow(
   clientId: string,
+  proxyBase?: string,
 ): Promise<DeviceFlowStart> {
-  const res = await fetch("https://github.com/login/device/code", {
+  const ep = endpoints(proxyBase);
+  const res = await fetch(ep.deviceCode, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -47,10 +61,12 @@ export async function pollForToken(
   clientId: string,
   deviceCode: string,
   opts: PollOpts,
+  proxyBase?: string,
 ): Promise<string | null> {
+  const ep = endpoints(proxyBase);
   let interval = opts.intervalSec;
   for (let i = 0; i < opts.maxTries; i++) {
-    const res = await fetch("https://github.com/login/oauth/access_token", {
+    const res = await fetch(ep.accessToken, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -10,11 +10,12 @@ const polling = ref(false);
 const error = ref<string | null>(null);
 
 const CLIENT_ID = import.meta.env.VITE_GH_APP_CLIENT_ID as string;
+const AUTH_PROXY = import.meta.env.VITE_AUTH_PROXY as string | undefined;
 
 async function login() {
   error.value = null;
   try {
-    const start = await startDeviceFlow(CLIENT_ID);
+    const start = await startDeviceFlow(CLIENT_ID, AUTH_PROXY);
     userCode.value = start.userCode;
     verifyUrl.value = start.verificationUri;
     window.open(start.verificationUri, "_blank");
@@ -22,7 +23,7 @@ async function login() {
     const token = await pollForToken(CLIENT_ID, start.deviceCode, {
       intervalSec: start.interval,
       maxTries: Math.ceil(start.expiresIn / start.interval),
-    });
+    }, AUTH_PROXY);
     polling.value = false;
     if (!token) { error.value = "登录已取消或过期，请重试"; return; }
     await store.setLoggedIn(token);
