@@ -8,6 +8,7 @@ export interface SyncDeps {
   getMonth: (m: string) => Promise<MonthDoc>;
   putMonth: (m: string, data: MonthData, sha: string | null) => Promise<{ sha: string }>;
   onStatus?: (status: "saving" | "saved" | "error", err?: Error) => void;
+  onSynced?: (month: string, doc: MonthDoc) => void;
 }
 
 interface Pending {
@@ -48,6 +49,7 @@ export class SyncEngine {
       } else {
         this.pending.set(month, { doc: { data: p.doc.data, sha: result.sha }, base: p.doc.data, timer: null });
       }
+      this.deps.onSynced?.(month, { data: p.doc.data, sha: result.sha });
       this.deps.onStatus?.("saved");
     } catch (err) {
       if (err instanceof GitHubError && err.status === 409) {

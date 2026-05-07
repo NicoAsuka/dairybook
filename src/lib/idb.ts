@@ -5,7 +5,7 @@ const KEY_TOKEN = "dairybook.token";
 const monthKey = (m: string) => `month.${m}`;
 
 export async function cacheMonth(month: string, doc: MonthDoc): Promise<void> {
-  await set(monthKey(month), doc);
+  await set(monthKey(month), JSON.parse(JSON.stringify(doc)));
 }
 
 export async function getCachedMonth(month: string): Promise<MonthDoc | undefined> {

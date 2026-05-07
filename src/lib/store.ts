@@ -50,6 +50,10 @@ function createStore() {
         else if (s === "saved") state.syncStatus = { kind: "saved", at: Date.now() };
         else state.syncStatus = { kind: "error", message: err?.message ?? "save failed", retryable: true };
       },
+      onSynced: (month, doc) => {
+        state.months[month] = doc;
+        void idb.cacheMonth(month, doc);
+      },
     });
   }
 
