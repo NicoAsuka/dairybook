@@ -115,14 +115,23 @@ dairybook-data/                # private
 {
   "version": 1,
   "tags": [
-    { "id": "work",  "name": "工作", "color": "#5a8dee" },
-    { "id": "read",  "name": "阅读", "color": "#ef9a3c" },
-    { "id": "rest",  "name": "休息", "color": "#4caf7a" }
+    {
+      "id": "work",
+      "name": "工作",
+      "color": "#5a8dee",
+      "updatedAt": "2026-05-07T08:00:00Z",
+      "deletedAt": null
+    }
   ]
 }
 ```
 
-`id` 由用户首次创建时指定（短英文 slug），不可改；`name` / `color` 可改。
+字段：
+
+- `id`：用户首次创建时指定的短英文 slug，不可改。
+- `name` / `color`：可改。`color` 为 CSS hex（`#RRGGBB`）。
+- `updatedAt`：ISO 8601 UTC，用于多设备合并时取较新者。
+- `deletedAt`：软删除标记。删除标签 ≠ 直接从数组移除——而是设 `deletedAt` 后续 GC，保证多设备合并时"一方改一方删"不丢数据。UI 层过滤 `deletedAt != null` 的标签。
 
 ### 3.4 投影：JSON → 24 小时网格
 
@@ -153,7 +162,8 @@ dairybook-data/                # private
 
 | 组件 | 职责 |
 |---|---|
-| `<DateNav>` | 顶栏日期 + 左右键 + "今天" 按钮 + 全局搜索入口 |
+| `<TopBar>` | 顶栏容器：左侧 logo / `<DateNav>` / 右侧 `<SearchPanel>` 触发 + `<SettingsPanel>` 触发 |
+| `<DateNav>` | 顶栏内的日期 + 左右键 + "今天" 按钮 |
 | `<MiniCalendar>` | 左栏月日历，有 entry 的日子带圆点；点击切日 |
 | `<TagSummary>` | 左栏当日标签时长合计 + 周/月统计入口 |
 | `<Timeline>` | 主区 24 小时纵向网格 |
@@ -177,11 +187,16 @@ dairybook-data/                # private
 3. 弹窗：显示 user_code + 复制按钮 + 自动打开 verification_uri 新标签
 4. 按 interval 轮询 token endpoint
 5. 拿到 access_token → localStorage["dairybook.token"]
-6. 检测 dairybook-data 仓库；不存在则 POST /user/repos 创建（private）
+6. 检测 dairybook-data 仓库：
+   - 已存在 + App 已安装 → 进 7
+   - 不存在 → 引导用户去模板仓库 "Use this template" 创建（私有）
+   - 已存在但 App 未安装 → 引导用户安装 App 到该仓库
 7. 进入主界面
 ```
 
-GitHub App 配置：fine-grained installation，只允许访问 `dairybook-data` 仓库；scope: `repo` (contents read/write)。
+GitHub App 配置：fine-grained installation，只允许访问 `dairybook-data` 仓库；权限收窄到 `Contents: Read and write` + `Metadata: Read-only`。
+
+**首次创建数据仓库**：app 不申请 `Administration` 权限。登录后若检测到 `dairybook-data` 不存在，弹引导卡片让用户去 GitHub 一键模板（README + 空 `data/` + 空 `tags.json`），再回 app 安装 GitHub App 到该仓库。这是一次性的 30 秒成本，换来更窄的权限面。
 
 ### 5.2 打开 → 渲染
 
@@ -212,12 +227,12 @@ PUT 返回 409 (sha 不匹配)：
 
 ```
 1. GET 最新版本
-2. 三向合并（key = entry.id）：
+2. 三向合并 entries（key = `entry.id`）：
    - 双方各加新 entry → 全保留
-   - 同 id 双方都改 → updatedAt 较新者胜
-   - 一方删一方改 → 视为保留改的那条（不丢数据）
+   - 同 id 双方都改 → `updatedAt` 较新者胜
+   - 一方删一方改 → 保留改的那条（不丢数据）
    - 双方都删 → 删除
-3. tags.json 同样规则
+3. tags.json 同样三向合并（key = `tag.id`，按 `updatedAt` 取较新；删除用 `deletedAt` 软删除标记，不直接移除数组项）
 4. 重新 PUT
 ```
 
@@ -238,7 +253,8 @@ PUT 返回 409 (sha 不匹配)：
 
 | 场景 | 处置 |
 |---|---|
-| 月文件不存在 | PUT 不带 sha = 创建文件。仓库不存在则先 POST /user/repos。 |
+| 月文件不存在 | PUT 不带 sha = 创建文件。 |
+| 仓库不存在 | 不自动创建（避免要 Administration 权限）。引导用户用 GitHub 模板手动创建后回到 app（见 §5.1）。 |
 | JSON 解析失败 | 拒绝覆盖 → 弹"云端文件损坏，查看 / 用本地缓存覆盖 / 取消"，永远不静默丢数据。 |
 | sha 冲突 | 见 5.4。 |
 | 用户撤销 App 授权 | 401 → 同 token 失效流程。 |
@@ -250,11 +266,11 @@ PUT 返回 409 (sha 不匹配)：
 | end < start | 编辑器实时校验，保存按钮变灰。 |
 | 跨午夜 entry | 不支持，提示拆两条。 |
 | start == end | 允许保存（打卡式）。 |
-| 删除有 entry 引用的标签 | 二次确认 → 把所有引用置 `null`，保留 entry 本身。 |
+| 删除有 entry 引用的标签 | 二次确认 → 给标签打 `deletedAt`（软删除）。entry 上的 `tagId` 引用不动，UI 渲染时若指向已软删标签则视作"未分类"。这样多设备合并时"一方改 entry 一方删 tag"不丢数据。 |
 
 ### 6.4 隐私
 
-- token 存 localStorage（避免 CSRF）。
+- token 存 localStorage 而非 cookie：避免 CSRF；代价是同源 XSS 可读取，故第三方脚本严格控制——dependencies 树审计 + Markdown 渲染关闭 raw HTML。
 - 所有请求 https + Bearer。
 - 设置面板 "撤销当前设备" 按钮：清本地 token + 引导去 GitHub 撤销 App。
 - 数据仓库 README 标明"包含个人日志，请保持私有"。
