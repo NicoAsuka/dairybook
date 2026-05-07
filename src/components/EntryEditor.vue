@@ -41,10 +41,10 @@ function save() {
     </div>
     <textarea v-model="text" rows="6" placeholder="What did you do 09-10..." />
     <div class="actions">
-      <button data-action="delete" class="danger" @click="$emit('delete')">Delete</button>
+      <button data-action="delete" class="danger" @click="$emit('delete')">删除</button>
       <span class="spacer" />
-      <button data-action="cancel" @click="$emit('cancel')">Cancel</button>
-      <button data-action="save" class="primary" :disabled="!valid" @click="save">Save</button>
+      <button data-action="cancel" @click="$emit('cancel')">取消</button>
+      <button data-action="save" class="primary" :disabled="!valid" @click="save">保存</button>
     </div>
   </div>
 </template>
