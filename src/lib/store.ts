@@ -201,6 +201,9 @@ function createStore() {
 
   let tagsBase: TagsData = state.tags.data;
   let tagsTimer: ReturnType<typeof setTimeout> | null = null;
+  let tagsRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  let tagsAttempt = 0;
+  const TAGS_MAX_ATTEMPTS = 3;
 
   async function loadTags(): Promise<void> {
     if (!client) return;
@@ -211,6 +214,7 @@ function createStore() {
 
   function flushTags(): void {
     if (!client) return;
+    if (tagsRetryTimer) { clearTimeout(tagsRetryTimer); tagsRetryTimer = null; }
     state.tagsSyncStatus = { kind: "saving" };
     const snapshot = JSON.parse(JSON.stringify(state.tags.data)) as TagsData;
     const sha = state.tags.sha;
@@ -219,17 +223,40 @@ function createStore() {
         const r = await client!.putTags(snapshot, sha);
         state.tags.sha = r.sha;
         tagsBase = snapshot;
+        tagsAttempt = 0;
         state.tagsSyncStatus = { kind: "saved", at: Date.now() };
       } catch (err) {
         const e = err as Error & { status?: number };
-        if (e.status === 409) {
-          const remote = await client!.getTags();
-          const merged = mergeTagsData(tagsBase, snapshot, remote.data);
-          state.tags = { data: merged, sha: remote.sha };
-          scheduleTagsSave();
-        } else {
-          state.tagsSyncStatus = { kind: "error", message: e.message, retryable: true };
+        tagsAttempt++;
+
+        if (tagsAttempt >= TAGS_MAX_ATTEMPTS) {
+          state.tagsSyncStatus = { kind: "error", message: `保存标签失败：${e.message}`, retryable: true };
+          return;
         }
+
+        if (e.status === 409) {
+          // sha 冲突：拉远端 → 三向合并 → 重 PUT
+          try {
+            const remote = await client!.getTags();
+            const merged = mergeTagsData(tagsBase, snapshot, remote.data);
+            state.tags = { data: merged, sha: remote.sha };
+            scheduleTagsSave();
+          } catch (e2) {
+            state.tagsSyncStatus = { kind: "error", message: `合并标签失败：${(e2 as Error).message}`, retryable: true };
+          }
+          return;
+        }
+
+        // 网络错误（无 status）或 5xx：指数退避重试
+        if (e.status === undefined || e.status >= 500) {
+          const delay = 1000 * 2 ** (tagsAttempt - 1);
+          tagsRetryTimer = setTimeout(() => { tagsRetryTimer = null; flushTags(); }, delay);
+          return;
+        }
+
+        // 其他 4xx：用户介入才能解决，不自动重试
+        state.tagsSyncStatus = { kind: "error", message: `保存标签失败：${e.message}`, retryable: e.status === 401 };
+        tagsAttempt = 0;
       }
     })();
   }
@@ -272,6 +299,7 @@ function createStore() {
       if (doc) sync.scheduleSave(m, doc);
     }
     if (state.tagsSyncStatus.kind === "error") {
+      tagsAttempt = 0;
       scheduleTagsSave();
     }
   }
