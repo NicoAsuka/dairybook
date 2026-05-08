@@ -330,7 +330,7 @@ const monthsCount = computed(() => Object.keys(store.state.months).length);
 
     <footer class="foot">
       <span>dairybook · 数据由你掌握 · 零后端</span>
-      <a href="https://github.com/Nico-asuka/dairybook" target="_blank">源代码</a>
+      <a href="https://github.com/NicoAsuka/dairybook" target="_blank">源代码</a>
     </footer>
   </div>
 </template>

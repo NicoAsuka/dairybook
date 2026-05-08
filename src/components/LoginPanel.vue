@@ -121,7 +121,7 @@ function reset() {
       </div>
 
       <p class="footer">
-        <a href="https://github.com/Nico-asuka/dairybook" target="_blank">查看源代码</a>
+        <a href="https://github.com/NicoAsuka/dairybook" target="_blank">查看源代码</a>
       </p>
     </div>
   </div>
