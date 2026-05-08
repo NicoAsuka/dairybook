@@ -103,5 +103,10 @@ function entryStyle(p: Placed): string {
   background-image: repeating-linear-gradient(0deg, var(--border) 0 1px, transparent 1px 36px);
   pointer-events: none; z-index: 0;
 }
-.entry-slot { z-index: 1; padding: 1px 0; }
+.entry-slot {
+  z-index: 1;
+  padding: 1px 0;
+  display: flex;          /* 让内部 EntryCard 沿垂直方向 stretch 撑满整个时段槽位 */
+  min-height: 0;
+}
 </style>
