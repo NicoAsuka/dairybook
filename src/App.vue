@@ -61,12 +61,13 @@ function onDelete() {
         <MiniCalendar />
         <TagSummary />
         <div class="quick">
-          <button @click="newEntryAt('09:00','10:00')">+ 新增条目</button>
+          <button class="quick-btn" @click="newEntryAt('09:00','10:00')">＋ 新增条目</button>
+          <p class="quick-hint">提示：直接点时间轴空白处也能创建</p>
         </div>
       </div>
     </aside>
     <main class="main">
-      <Timeline @click-entry="openEditor" />
+      <Timeline @click-entry="openEditor" @add-at="(t: { start: string; end: string }) => newEntryAt(t.start, t.end)" />
     </main>
 
     <div v-if="editing" class="modal-bg" @click.self="closeEditor">
@@ -115,9 +116,50 @@ function onDelete() {
 }
 .layout.collapsed .side { border-right-width: 0; }
 .main { overflow-y: auto; }
-.quick { padding: 12px; border-top: 1px solid var(--border); }
-.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.3); display: grid; place-items: center; z-index: 100; }
-.modal { background: var(--bg-elevated); border-radius: var(--radius); box-shadow: 0 10px 30px rgba(0,0,0,.2); max-height: 90vh; overflow: auto; }
+.quick { padding: 14px; border-top: 1px solid var(--border); }
+.quick-btn {
+  width: 100%;
+  padding: 8px 0;
+  border-color: var(--border);
+  font-weight: 500;
+  color: var(--text);
+  background: var(--bg);
+}
+.quick-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.quick-hint {
+  margin: 8px 0 0 0;
+  font-size: 11px;
+  color: var(--text-faint);
+  text-align: center;
+}
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: grid; place-items: center; z-index: 100;
+  animation: fadeIn 0.15s ease;
+}
+.modal {
+  background: var(--bg-elevated);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-height: 90vh;
+  overflow: auto;
+  animation: pop 0.18s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
 
 @media (max-width: 720px) {
   .layout { grid-template-columns: 1fr; }

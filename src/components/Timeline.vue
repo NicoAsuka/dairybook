@@ -1,13 +1,24 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, onUnmounted, ref, useTemplateRef } from "vue";
 import { useStore } from "@/lib/store";
 import EntryCard from "./EntryCard.vue";
 import type { Entry } from "@/lib/types";
+import { formatYMD } from "@/lib/date";
 
 const store = useStore();
-const emit = defineEmits<{ "click-entry": [Entry] }>();
+const emit = defineEmits<{
+  "click-entry": [Entry];
+  "add-at": [{ start: string; end: string }];
+}>();
 
 const entries = computed(() => store.entriesForSelectedDate());
+
+function pad(n: number): string { return String(n).padStart(2, "0"); }
+
+function minToTime(min: number): string {
+  const m = Math.max(0, Math.min(min, 24 * 60 - 1));
+  return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+}
 
 function timeToRow(t: string, isEnd = false): number {
   const parts = t.split(":").map(Number);
@@ -41,16 +52,57 @@ function entryStyle(p: Placed): string {
   const endRow = timeToRow(p.end, true);
   return `grid-row: ${startRow} / ${endRow}; grid-column: ${p.col + 1};`;
 }
+
+// 点击空白创建：基于 .entries 的 offsetY 计算 30-min 槽位
+const entriesEl = useTemplateRef<HTMLDivElement>("entriesEl");
+function onEmptyClick(e: MouseEvent) {
+  const slot = Math.floor(e.offsetY / 18);                // 0..47
+  const startMin = slot * 30;
+  const endMin = Math.min(startMin + 60, 24 * 60 - 1);
+  emit("add-at", { start: minToTime(startMin), end: minToTime(endMin) });
+}
+
+// "现在" 红线 + 自动滚动
+const now = ref(new Date());
+let nowTimer: ReturnType<typeof setInterval> | null = null;
+
+const isToday = computed(() => formatYMD(now.value) === store.state.selectedDate);
+
+const nowOffsetPx = computed(() => {
+  const d = now.value;
+  const min = d.getHours() * 60 + d.getMinutes();
+  return (min / 30) * 18;          // 0..864
+});
+
+const scrollHostEl = useTemplateRef<HTMLDivElement>("scrollHostEl");
+
+onMounted(() => {
+  nowTimer = setInterval(() => { now.value = new Date(); }, 60_000);
+  // 进入今天时滚动到当前时间附近（前移 120px 让上下都能看到）
+  if (isToday.value) {
+    setTimeout(() => {
+      const el = scrollHostEl.value;
+      if (!el) return;
+      // 找到外层 scroll 容器（main）
+      const target = el.closest(".main") as HTMLElement | null;
+      if (target) target.scrollTop = Math.max(0, nowOffsetPx.value - 120);
+    }, 0);
+  }
+});
+
+onUnmounted(() => {
+  if (nowTimer) clearInterval(nowTimer);
+});
 </script>
 
 <template>
-  <div class="timeline" :style="{ '--cols': totalCols }">
+  <div class="timeline" :style="{ '--cols': totalCols }" ref="scrollHostEl">
     <div class="hours">
       <div v-for="h in hours" :key="h" class="hour-row" :style="`grid-row: ${h * 2 + 1} / span 2`">
         {{ String(h).padStart(2, '0') }}:00
       </div>
     </div>
-    <div class="entries">
+    <div class="entries" ref="entriesEl" @click.self="onEmptyClick">
       <div
         v-for="p in placed"
         :key="p.id"
@@ -59,6 +111,15 @@ function entryStyle(p: Placed): string {
         :style="entryStyle(p)"
       >
         <EntryCard :entry="p" @click="emit('click-entry', p)" />
+      </div>
+
+      <!-- "现在" 指示线（仅今天显示） -->
+      <div
+        v-if="isToday"
+        class="now-line"
+        :style="{ top: `${nowOffsetPx}px` }"
+      >
+        <span class="now-dot" />
       </div>
     </div>
   </div>
@@ -79,7 +140,6 @@ function entryStyle(p: Placed): string {
   color: var(--text-faint);
   line-height: 1;
 }
-/* hour label visually centers on the hour-line above it */
 .hour-row {
   padding: 0;
   text-align: right;
@@ -87,7 +147,6 @@ function entryStyle(p: Placed): string {
   transform: translateY(-50%);
   font-variant-numeric: tabular-nums;
 }
-/* don't shift the very first label off the top */
 .hour-row:first-child { transform: none; }
 
 .entries {
@@ -95,8 +154,8 @@ function entryStyle(p: Placed): string {
   grid-template-rows: repeat(48, 18px);
   grid-template-columns: repeat(var(--cols, 1), 1fr);
   column-gap: 2px;
-  /* row-gap removed — must match .hours height for the divider lines to line up */
   position: relative;
+  cursor: copy;          /* 暗示空白处可点击创建 */
 }
 .entries::before {
   content: ""; position: absolute; inset: 0;
@@ -106,7 +165,25 @@ function entryStyle(p: Placed): string {
 .entry-slot {
   z-index: 1;
   padding: 1px 0;
-  display: flex;          /* 让内部 EntryCard 沿垂直方向 stretch 撑满整个时段槽位 */
+  display: flex;
   min-height: 0;
+  cursor: default;        /* slot 内部按 EntryCard 自己的 cursor */
+}
+
+/* "现在" 红线 */
+.now-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 0;
+  border-top: 1.5px solid #ef4444;
+  z-index: 2;
+  pointer-events: none;
+}
+.now-dot {
+  position: absolute;
+  left: -5px; top: -5px;
+  width: 10px; height: 10px;
+  background: #ef4444;
+  border-radius: 50%;
 }
 </style>
