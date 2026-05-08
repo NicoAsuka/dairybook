@@ -7,7 +7,7 @@ test("create entry -> debounce save -> reload sees it", async ({ page }) => {
   await page.getByRole("button", { name: "登录" }).click();
   await expect(page.locator(".timeline")).toBeVisible();
 
-  await page.getByRole("button", { name: /\+ 新增条目/ }).click();
+  await page.getByRole("button", { name: /新增条目/ }).click();
   await page.locator("textarea").fill("测试 e2e 写入");
   await page.getByRole("button", { name: "保存" }).click();
 

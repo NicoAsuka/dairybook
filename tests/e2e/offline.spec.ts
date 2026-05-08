@@ -19,7 +19,7 @@ test("go offline → edit entry → reconnect → auto-sync succeeds", async ({ 
   await expect(page.locator(".timeline")).toBeVisible();
 
   // Create an initial entry and wait for it to sync
-  await page.getByRole("button", { name: /\+ 新增条目/ }).click();
+  await page.getByRole("button", { name: /新增条目/ }).click();
   await page.locator("textarea").fill("在线条目");
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByText("已保存")).toBeVisible({ timeout: 5000 });
@@ -28,7 +28,7 @@ test("go offline → edit entry → reconnect → auto-sync succeeds", async ({ 
   goOffline = true;
 
   // Create another entry while offline — save will fail
-  await page.getByRole("button", { name: /\+ 新增条目/ }).click();
+  await page.getByRole("button", { name: /新增条目/ }).click();
   await page.locator("textarea").fill("离线条目");
   await page.getByRole("button", { name: "保存", exact: true }).click();
 

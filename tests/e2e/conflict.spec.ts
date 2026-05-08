@@ -50,7 +50,7 @@ test("409 on save -> fetch remote -> merge -> re-PUT keeps both entries", async 
   await page.getByRole("button", { name: "登录" }).click();
   await expect(page.locator(".timeline")).toBeVisible();
 
-  await page.getByRole("button", { name: /\+ 新增条目/ }).click();
+  await page.getByRole("button", { name: /新增条目/ }).click();
   await page.locator("textarea").fill("本地新条目");
   await page.getByRole("button", { name: "保存" }).click();
 

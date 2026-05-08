@@ -35,14 +35,14 @@ test("create tag → assign to entry → see colored bar", async ({ page }) => {
   await page.getByRole("button", { name: "设置" }).click();
   await page.locator('input[placeholder*="id"]').fill("work");
   await page.locator('input[placeholder*="名字"]').fill("工作");
-  await page.getByRole("button", { name: "新建" }).click();
+  await page.getByRole("button", { name: "添加", exact: true }).click();
   await page.getByRole("button", { name: "关闭" }).click();
 
   // Wait for tags to save (debounce 1s + PUT + render)
   await expect(page.getByText("已保存")).toBeVisible({ timeout: 10000 });
 
   // Create entry and select work tag
-  await page.getByRole("button", { name: /\+ 新增条目/ }).click();
+  await page.getByRole("button", { name: /新增条目/ }).click();
   await page.locator("textarea").fill("写代码");
   // In EntryEditor's TagSelect, click the "工作" tag button
   await page.locator('.tag-row button:has-text("工作")').click();
