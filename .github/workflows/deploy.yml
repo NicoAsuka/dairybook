@@ -1,6 +1,7 @@
 name: Deploy
 on:
   push: { branches: [main] }
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -29,6 +30,7 @@ jobs:
           VITE_GH_APP_CLIENT_ID: ${{ vars.VITE_GH_APP_CLIENT_ID }}
           VITE_DATA_REPO_TEMPLATE: ${{ vars.VITE_DATA_REPO_TEMPLATE }}
           VITE_GH_APP_INSTALL_URL: ${{ vars.VITE_GH_APP_INSTALL_URL }}
+          VITE_AUTH_PROXY: ${{ vars.VITE_AUTH_PROXY }}
         run: pnpm build
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
