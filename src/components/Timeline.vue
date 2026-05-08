@@ -302,6 +302,9 @@ function slotCursorClass(p: Placed): string {
   cursor: grab;
   user-select: none;
   position: relative;
+  /* 让 EntryCard 内可以按 slot 高度做布局切换 */
+  container-type: size;
+  container-name: slot;
 }
 .entry-slot.dragging :deep(.card) {
   opacity: 0.88;

@@ -82,21 +82,23 @@ const html = computed(() => renderMarkdown(props.entry.text));
 
 .body {
   display: flex;
-  flex-direction: column;
   flex: 1;
-  padding: 6px 10px;
   min-width: 0;
-  gap: 1px;
   position: relative;
   z-index: 1;
-}
-.head {
-  display: flex;
+  /* 默认：单行紧凑布局（适用于 ≤1.5h 的卡片） */
+  flex-direction: row;
   align-items: center;
   gap: 8px;
+  padding: 4px 10px;
+}
+.head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
   font-size: 12px;
   color: var(--text-muted);
-  flex-wrap: wrap;
 }
 .time {
   font-variant-numeric: tabular-nums;
@@ -109,26 +111,49 @@ const html = computed(() => renderMarkdown(props.entry.text));
   color: var(--bar);
   background: color-mix(in srgb, var(--bar) 12%, transparent);
   font-weight: 500;
+  white-space: nowrap;
 }
 .text {
   color: var(--text);
-  overflow: hidden;
   font-size: 13px;
+  /* 紧凑布局下：单行 ellipsis */
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .text :deep(p) {
   margin: 0;
+  display: inline;
 }
-.text :deep(p + p) {
-  margin-top: 4px;
-}
-.text :deep(a) {
-  color: var(--accent);
-}
-.text :deep(strong) {
-  font-weight: 600;
-}
+.text :deep(a) { color: var(--accent); }
+.text :deep(strong) { font-weight: 600; }
 .text.empty {
   color: var(--text-faint);
   font-size: 12px;
+  font-style: italic;
+}
+
+/* 高度 ≥ 56px（约 1.5h）的卡片切到双行布局 */
+@container slot (min-height: 56px) {
+  .body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    padding: 6px 10px;
+  }
+  .text {
+    white-space: normal;
+    text-overflow: clip;
+    overflow: hidden;
+  }
+  .text :deep(p) {
+    display: block;
+    margin: 0;
+  }
+  .text :deep(p + p) {
+    margin-top: 4px;
+  }
 }
 </style>
