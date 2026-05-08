@@ -9,6 +9,7 @@ defineEmits<{
   "open-settings": [];
   "open-search": [];
   "open-stats": [];
+  "open-shortcuts": [];
   "toggle-sidebar": [];
 }>();
 
@@ -38,6 +39,9 @@ const userLabel = computed(() =>
       </button>
       <button class="icon-btn" @click="$emit('open-stats')" aria-label="统计">
         <Icon name="stats" />
+      </button>
+      <button class="icon-btn" @click="$emit('open-shortcuts')" aria-label="键盘快捷键" title="键盘快捷键 (?)">
+        <Icon name="keyboard" />
       </button>
       <button class="icon-btn" @click="$emit('open-settings')" aria-label="设置">
         <Icon name="settings" />

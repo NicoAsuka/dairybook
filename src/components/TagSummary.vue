@@ -41,7 +41,10 @@ function fmt(min: number): string {
         <span class="dur">{{ fmt(r.minutes) }}</span>
       </li>
     </ul>
-    <p v-else class="empty">还没有 entry</p>
+    <div v-else class="empty">
+      <span class="empty-dot" />
+      <span class="empty-text">还没有 entry</span>
+    </div>
   </div>
 </template>
 
@@ -51,5 +54,15 @@ function fmt(min: number): string {
 ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
 li { display: flex; align-items: center; justify-content: space-between; }
 .dur { font-variant-numeric: tabular-nums; color: var(--text-muted); font-size: 12px; }
-.empty { color: var(--text-faint); font-size: 12px; margin: 0; }
+.empty {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+.empty-dot {
+  width: 6px; height: 6px;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 50%;
+}
 </style>

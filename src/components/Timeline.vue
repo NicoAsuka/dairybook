@@ -246,6 +246,12 @@ function slotCursorClass(p: Placed): string {
       <div v-if="isToday" class="now-line" :style="{ top: `${nowOffsetPx}px` }">
         <span class="now-dot" />
       </div>
+
+      <!-- 空状态：今天没 entry 时给个轻量提示 -->
+      <div v-if="entries.length === 0" class="empty-hint">
+        <p class="empty-title">这一天还没有记录</p>
+        <p class="empty-sub">点时间轴空白处即可创建 · 或按 <kbd>N</kbd></p>
+      </div>
     </div>
   </div>
 </template>
@@ -310,6 +316,36 @@ function slotCursorClass(p: Placed): string {
 .entry-slot.dragging-resize-bottom,
 .entry-slot.dragging-resize-bottom * {
   cursor: ns-resize !important;
+}
+
+/* 空状态提示 */
+.empty-hint {
+  position: absolute;
+  left: 50%;
+  top: 200px;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 1;
+}
+.empty-title {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.empty-sub {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.empty-sub kbd {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+  padding: 1px 5px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 3px;
 }
 
 /* "现在" 红线 */

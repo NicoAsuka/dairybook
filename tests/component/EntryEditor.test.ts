@@ -41,7 +41,7 @@ describe("EntryEditor", () => {
   it("toggles markdown preview", async () => {
     const w = mount(EntryEditor, { props: { entry: makeEntry({ text: "**bold**" }) } });
     expect(w.find(".preview").exists()).toBe(false);
-    await w.find(".preview-toggle").trigger("click");
+    await w.find(".text-area .toggle").trigger("click");
     expect(w.find(".preview").html()).toContain("<strong>bold</strong>");
   });
 });
