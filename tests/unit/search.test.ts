@@ -41,7 +41,7 @@ describe("searchEntries", () => {
   it("combines filters with AND", () => {
     const hits = searchEntries(months, { keyword: "咖啡", tagIds: ["rest"] });
     expect(hits).toHaveLength(1);
-    expect(hits[0].entry.id).toBe("c");
+    expect(hits[0]!.entry.id).toBe("c");
   });
 
   it("returns hits sorted by date desc, then start asc", () => {

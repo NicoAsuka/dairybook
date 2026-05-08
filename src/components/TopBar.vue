@@ -8,6 +8,7 @@ defineEmits<{
   "open-settings": [];
   "open-search": [];
   "open-stats": [];
+  "toggle-sidebar": [];
 }>();
 
 const store = useStore();
@@ -19,6 +20,7 @@ const userLabel = computed(() =>
 <template>
   <header class="topbar">
     <div class="left">
+      <button class="icon menu" @click="$emit('toggle-sidebar')" aria-label="折叠侧栏">☰</button>
       <strong class="brand">dairybook</strong>
     </div>
     <div class="center"><DateNav /></div>
@@ -38,9 +40,10 @@ const userLabel = computed(() =>
   align-items: center; padding: 12px 20px;
   background: var(--bg-elevated); border-bottom: 1px solid var(--border);
 }
-.left { justify-self: start; }
+.left { justify-self: start; display: flex; align-items: center; gap: 10px; }
 .center { justify-self: center; }
 .right { justify-self: end; display: flex; gap: 12px; align-items: center; color: var(--text-muted); }
 .brand { font-size: 16px; }
 .icon { padding: 4px 8px; }
+.menu { font-size: 16px; line-height: 1; }
 </style>

@@ -19,6 +19,13 @@ const settingsOpen = ref(false);
 const searchOpen = ref(false);
 const statsOpen = ref(false);
 
+const SIDEBAR_KEY = "dairybook.sidebar.collapsed";
+const sidebarCollapsed = ref(localStorage.getItem(SIDEBAR_KEY) === "1");
+function toggleSidebar() {
+  sidebarCollapsed.value = !sidebarCollapsed.value;
+  localStorage.setItem(SIDEBAR_KEY, sidebarCollapsed.value ? "1" : "0");
+}
+
 onMounted(() => store.bootFromCache());
 
 const view = computed(() => {
@@ -42,17 +49,20 @@ function onDelete() {
 <template>
   <LoginPanel v-if="view === 'login'" />
   <OnboardingPanel v-else-if="view === 'onboard'" />
-  <div v-else class="layout">
+  <div v-else class="layout" :class="{ collapsed: sidebarCollapsed }">
     <TopBar
       @open-settings="settingsOpen = true"
       @open-search="searchOpen = true"
       @open-stats="statsOpen = true"
+      @toggle-sidebar="toggleSidebar"
     />
     <aside class="side">
-      <MiniCalendar />
-      <TagSummary />
-      <div class="quick">
-        <button @click="newEntryAt('09:00','10:00')">+ 新增条目</button>
+      <div class="side-inner">
+        <MiniCalendar />
+        <TagSummary />
+        <div class="quick">
+          <button @click="newEntryAt('09:00','10:00')">+ 新增条目</button>
+        </div>
       </div>
     </aside>
     <main class="main">
@@ -85,9 +95,25 @@ function onDelete() {
 </template>
 
 <style scoped>
-.layout { display: grid; grid-template-rows: auto 1fr; grid-template-columns: 280px 1fr; height: 100vh; }
+.layout {
+  display: grid; grid-template-rows: auto 1fr;
+  grid-template-columns: 280px 1fr;
+  height: 100vh;
+  transition: grid-template-columns .2s ease;
+}
+.layout.collapsed { grid-template-columns: 0 1fr; }
 .layout > :deep(header) { grid-column: 1 / 3; }
-.side { border-right: 1px solid var(--border); background: var(--bg-elevated); overflow-y: auto; }
+.side {
+  border-right: 1px solid var(--border);
+  background: var(--bg-elevated);
+  overflow: hidden;     /* 折叠时不让内容溢出 */
+}
+.side-inner {
+  width: 280px;
+  height: 100%;
+  overflow-y: auto;
+}
+.layout.collapsed .side { border-right-width: 0; }
 .main { overflow-y: auto; }
 .quick { padding: 12px; border-top: 1px solid var(--border); }
 .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.3); display: grid; place-items: center; z-index: 100; }

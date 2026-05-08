@@ -68,21 +68,34 @@ function entryStyle(p: Placed): string {
 .timeline {
   display: grid;
   grid-template-columns: 56px 1fr;
-  gap: 8px;
+  column-gap: 8px;
   padding: 12px 20px;
+  align-items: start;
 }
 .hours {
   display: grid;
   grid-template-rows: repeat(48, 18px);
   font-size: 11px;
   color: var(--text-faint);
+  line-height: 1;
 }
-.hour-row { padding-top: 0; }
+/* hour label visually centers on the hour-line above it */
+.hour-row {
+  padding: 0;
+  text-align: right;
+  padding-right: 4px;
+  transform: translateY(-50%);
+  font-variant-numeric: tabular-nums;
+}
+/* don't shift the very first label off the top */
+.hour-row:first-child { transform: none; }
+
 .entries {
   display: grid;
   grid-template-rows: repeat(48, 18px);
   grid-template-columns: repeat(var(--cols, 1), 1fr);
-  gap: 2px;
+  column-gap: 2px;
+  /* row-gap removed — must match .hours height for the divider lines to line up */
   position: relative;
 }
 .entries::before {
@@ -90,5 +103,5 @@ function entryStyle(p: Placed): string {
   background-image: repeating-linear-gradient(0deg, var(--border) 0 1px, transparent 1px 36px);
   pointer-events: none; z-index: 0;
 }
-.entry-slot { z-index: 1; }
+.entry-slot { z-index: 1; padding: 1px 0; }
 </style>

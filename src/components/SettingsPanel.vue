@@ -42,6 +42,27 @@ function logout() {
   if (confirm("退出登录？本设备将清除 token。")) store.logout();
 }
 
+const SAMPLE_TAGS: { id: string; name: string; color: string }[] = [
+  { id: "work",   name: "工作", color: "#5a8dee" },
+  { id: "study",  name: "学习", color: "#8e7cc3" },
+  { id: "rest",   name: "休息", color: "#4caf7a" },
+  { id: "meal",   name: "吃饭", color: "#ef9a3c" },
+  { id: "sport",  name: "运动", color: "#e76f51" },
+  { id: "social", name: "社交", color: "#f4a261" },
+];
+
+function insertSampleTags() {
+  const now = new Date().toISOString();
+  for (const s of SAMPLE_TAGS) {
+    const existing = store.state.tags.data.tags.find((t) => t.id === s.id);
+    if (existing && existing.deletedAt === null) continue;
+    store.upsertTag({
+      id: s.id, name: s.name, color: s.color,
+      updatedAt: now, deletedAt: null,
+    });
+  }
+}
+
 async function exportJson() {
   await loadAll();
   const blob = buildJsonExport(Object.values(store.state.months), store.state.tags.data);
@@ -70,7 +91,18 @@ async function loadAll() {
 
     <section>
       <h3>标签</h3>
-      <table>
+
+      <div v-if="store.activeTags().length === 0" class="empty-tags">
+        <p class="muted">还没有标签。建议先用一组示例标签开始，之后随时改：</p>
+        <div class="sample-row">
+          <span v-for="s in SAMPLE_TAGS" :key="s.id" class="sample">
+            <span class="sample-dot" :style="{ background: s.color }" />{{ s.name }}
+          </span>
+        </div>
+        <button class="primary" @click="insertSampleTags">插入示例标签</button>
+      </div>
+
+      <table v-else>
         <tbody>
           <tr v-for="t in store.activeTags()" :key="t.id">
             <td><input type="color" :value="t.color" @change="recolor(t, ($event.target as HTMLInputElement).value)" /></td>
@@ -119,4 +151,12 @@ td { padding: 4px; vertical-align: middle; }
 .danger { color: #c0392b; }
 .muted { color: var(--text-muted); }
 .row { display: flex; gap: 8px; align-items: center; }
+.empty-tags {
+  padding: 16px; background: var(--bg); border: 1px dashed var(--border-strong);
+  border-radius: var(--radius); margin-bottom: 12px;
+}
+.empty-tags .muted { margin: 0 0 8px 0; }
+.sample-row { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 12px; }
+.sample { font-size: 12px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px; }
+.sample-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
 </style>

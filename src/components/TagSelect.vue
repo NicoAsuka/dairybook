@@ -23,6 +23,9 @@ function pick(id: string | null) { emit("update:modelValue", id); }
     >
       <TagBadge :tag="t" />
     </button>
+    <span v-if="store.activeTags().length === 0" class="hint">
+      还没有标签 · 去 ⚙️ 设置创建
+    </span>
   </div>
 </template>
 
@@ -33,4 +36,5 @@ function pick(id: string | null) { emit("update:modelValue", id); }
   border-radius: 12px;
 }
 .select button.active { border-color: var(--accent); background: var(--bg); }
+.hint { font-size: 11px; color: var(--text-faint); align-self: center; padding-left: 6px; }
 </style>

@@ -34,8 +34,8 @@ describe("aggregateDailyByTag", () => {
   it("returns 7-day series for a week", () => {
     const days = aggregateDailyByTag([{ data: month, sha: "x" }], "2026-05-04", "2026-05-10");
     expect(days).toHaveLength(7);
-    expect(days[0].date).toBe("2026-05-04");
-    expect(days[3].byTag.find((t) => t.tagId === "work")?.minutes).toBe(90);
-    expect(days[4].byTag.find((t) => t.tagId === "work")?.minutes).toBe(120);
+    expect(days[0]!.date).toBe("2026-05-04");
+    expect(days[3]!.byTag.find((t) => t.tagId === "work")?.minutes).toBe(90);
+    expect(days[4]!.byTag.find((t) => t.tagId === "work")?.minutes).toBe(120);
   });
 });
