@@ -4,10 +4,20 @@ import { useStore } from "@/lib/store";
 import { addDays, formatYMD, parseYMD } from "@/lib/date";
 import Icon from "./Icon.vue";
 
+const props = defineProps<{ compact?: boolean }>();
+
 const store = useStore();
 
 const label = computed(() => {
   const d = parseYMD(store.state.selectedDate);
+  if (props.compact) {
+    // 紧凑模式：5月9日 周四
+    return new Intl.DateTimeFormat("zh-CN", {
+      month: "long",
+      day: "numeric",
+      weekday: "short",
+    }).format(d);
+  }
   return new Intl.DateTimeFormat("zh-CN", {
     year: "numeric",
     month: "long",
@@ -27,7 +37,7 @@ function today() {
 </script>
 
 <template>
-  <div class="datenav">
+  <div class="datenav" :class="{ compact }">
     <button class="nav" @click="shift(-1)" aria-label="前一天">
       <Icon name="chevron-left" :size="16" />
     </button>
@@ -50,6 +60,12 @@ function today() {
   text-align: center;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.datenav.compact .label {
+  min-width: 0;
+  font-size: 13px;
+  padding: 0 4px;
 }
 .nav {
   width: 28px;
@@ -74,6 +90,10 @@ function today() {
   font-size: 12px;
   border-radius: 12px;
   border: 1px solid var(--border-strong);
+}
+.datenav.compact .today {
+  margin-left: 4px;
+  padding: 4px 10px;
 }
 .today.active {
   border-color: var(--accent);

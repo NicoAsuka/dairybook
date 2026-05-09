@@ -103,18 +103,21 @@ function onCardClick(p: Entry) {
   emit("click-entry", p);
 }
 
-// === 拖拽：mousedown / mousemove / mouseup ===
-function onSlotMouseDown(e: MouseEvent, p: Entry) {
-  // 只响应主键
-  if (e.button !== 0) return;
-  // 阻止文本选择
+// === 拖拽：pointer events 统一处理鼠标 / 触摸 / 笔 ===
+function onSlotPointerDown(e: PointerEvent, p: Entry) {
+  // 只响应主指针（多点触控时只跟踪第一个）
+  if (!e.isPrimary) return;
+  // 鼠标右键/中键不响应
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+
+  // 阻止文本选择 + 阻止默认滚动手势
   e.preventDefault();
 
-  // 根据按下位置在 EntryCard 上的偏移决定是 move 还是 resize 上 / 下边
   const slotEl = e.currentTarget as HTMLElement;
   const rect = slotEl.getBoundingClientRect();
   const offsetY = e.clientY - rect.top;
-  const EDGE = 6;
+  // 触摸的边缘判定区放大一点，更好命中
+  const EDGE = e.pointerType === "touch" ? 10 : 6;
   let mode: DragState["mode"] = "move";
   if (offsetY < EDGE) mode = "resize-top";
   else if (offsetY > rect.height - EDGE) mode = "resize-bottom";
@@ -130,11 +133,12 @@ function onSlotMouseDown(e: MouseEvent, p: Entry) {
     moved: false,
   };
 
-  document.addEventListener("mousemove", onMouseMove);
-  document.addEventListener("mouseup", onMouseUp);
+  document.addEventListener("pointermove", onPointerMove);
+  document.addEventListener("pointerup", onPointerUp);
+  document.addEventListener("pointercancel", onPointerUp);
 }
 
-function onMouseMove(e: MouseEvent) {
+function onPointerMove(e: PointerEvent) {
   if (!drag.value) return;
   const dy = e.clientY - drag.value.initialMouseY;
   if (!drag.value.moved && Math.abs(dy) < DRAG_THRESHOLD_PX) return;
@@ -163,9 +167,10 @@ function onMouseMove(e: MouseEvent) {
   drag.value.previewEnd = minToTime(newEnd);
 }
 
-function onMouseUp() {
-  document.removeEventListener("mousemove", onMouseMove);
-  document.removeEventListener("mouseup", onMouseUp);
+function onPointerUp() {
+  document.removeEventListener("pointermove", onPointerMove);
+  document.removeEventListener("pointerup", onPointerUp);
+  document.removeEventListener("pointercancel", onPointerUp);
 
   if (!drag.value) return;
   const d = drag.value;
@@ -214,8 +219,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (nowTimer) clearInterval(nowTimer);
-  document.removeEventListener("mousemove", onMouseMove);
-  document.removeEventListener("mouseup", onMouseUp);
+  document.removeEventListener("pointermove", onPointerMove);
+  document.removeEventListener("pointerup", onPointerUp);
+  document.removeEventListener("pointercancel", onPointerUp);
 });
 
 function slotCursorClass(p: Placed): string {
@@ -238,7 +244,7 @@ function slotCursorClass(p: Placed): string {
         :class="[slotCursorClass(p), { dragging: drag?.id === p.id && drag.moved }]"
         :data-entry-id="p.id"
         :style="entryStyle(p)"
-        @mousedown="onSlotMouseDown($event, p)"
+        @pointerdown="onSlotPointerDown($event, p)"
       >
         <EntryCard :entry="p" @click="onCardClick(p)" />
       </div>
@@ -305,6 +311,8 @@ function slotCursorClass(p: Placed): string {
   /* 让 EntryCard 内可以按 slot 高度做布局切换 */
   container-type: size;
   container-name: slot;
+  /* 触摸时让指针事件接管，不被浏览器解读为滚动手势 */
+  touch-action: none;
 }
 .entry-slot.dragging :deep(.card) {
   opacity: 0.88;

@@ -12,6 +12,7 @@ import StatsModal from "@/components/StatsModal.vue";
 import ShortcutsModal from "@/components/ShortcutsModal.vue";
 import LoginPanel from "@/components/LoginPanel.vue";
 import OnboardingPanel from "@/components/OnboardingPanel.vue";
+import Icon from "@/components/Icon.vue";
 import { addDays, formatYMD, parseYMD } from "@/lib/date";
 import type { Entry } from "@/lib/types";
 
@@ -22,11 +23,26 @@ const searchOpen = ref(false);
 const statsOpen = ref(false);
 const shortcutsOpen = ref(false);
 
+// 移动端判定（< 720px）
+const MOBILE_QUERY = "(max-width: 720px)";
+const isMobile = ref(
+  typeof window !== "undefined" && window.matchMedia(MOBILE_QUERY).matches,
+);
+
 const SIDEBAR_KEY = "dairybook.sidebar.collapsed";
-const sidebarCollapsed = ref(localStorage.getItem(SIDEBAR_KEY) === "1");
+// 移动端永远从折叠态开始（避免一打开就盖住时间轴）
+const sidebarCollapsed = ref(
+  isMobile.value ? true : localStorage.getItem(SIDEBAR_KEY) === "1",
+);
 function toggleSidebar() {
   sidebarCollapsed.value = !sidebarCollapsed.value;
-  localStorage.setItem(SIDEBAR_KEY, sidebarCollapsed.value ? "1" : "0");
+  // 移动端不持久化（每次进来都先收起）
+  if (!isMobile.value) {
+    localStorage.setItem(SIDEBAR_KEY, sidebarCollapsed.value ? "1" : "0");
+  }
+}
+function closeSidebarOnMobile() {
+  if (isMobile.value) sidebarCollapsed.value = true;
 }
 
 const TAG_BANNER_DISMISS_KEY = "dairybook.tagBanner.dismissed";
@@ -46,7 +62,25 @@ function openSettingsAndDismiss() {
   dismissTagBanner();
 }
 
-onMounted(() => store.bootFromCache());
+let mqList: MediaQueryList | null = null;
+function onMqChange(e: MediaQueryListEvent) {
+  isMobile.value = e.matches;
+  // 切到桌面时按持久化恢复，切到移动时强制收起
+  if (e.matches) {
+    sidebarCollapsed.value = true;
+  } else {
+    sidebarCollapsed.value = localStorage.getItem(SIDEBAR_KEY) === "1";
+  }
+}
+
+onMounted(() => {
+  store.bootFromCache();
+  mqList = window.matchMedia(MOBILE_QUERY);
+  mqList.addEventListener("change", onMqChange);
+});
+onUnmounted(() => {
+  mqList?.removeEventListener("change", onMqChange);
+});
 
 const view = computed(() => {
   if (store.state.auth.kind === "anonymous") return "login";
@@ -60,7 +94,6 @@ function newEntryAt(start: string, end: string) {
   editing.value = store.newEntry(start, end);
 }
 function newEntryNow() {
-  // 创建以当前时间向上取整到 30 分钟为起点的 1 小时 entry
   const d = new Date();
   let mins = d.getHours() * 60 + d.getMinutes();
   mins = Math.ceil(mins / 30) * 30;
@@ -87,6 +120,11 @@ function closeAllOverlays(): boolean {
   if (searchOpen.value) { searchOpen.value = false; return true; }
   if (statsOpen.value) { statsOpen.value = false; return true; }
   if (settingsOpen.value) { settingsOpen.value = false; return true; }
+  // mobile: 关闭打开的侧栏抽屉
+  if (isMobile.value && !sidebarCollapsed.value) {
+    sidebarCollapsed.value = true;
+    return true;
+  }
   return false;
 }
 
@@ -100,19 +138,16 @@ function isTextInputFocused(): boolean {
 }
 
 function onKeydown(e: KeyboardEvent) {
-  // 仅在主视图响应快捷键
   if (view.value !== "main") return;
 
   const mod = e.metaKey || e.ctrlKey;
   const inText = isTextInputFocused();
 
-  // Esc：关掉最上层 overlay（任何时候）
   if (e.key === "Escape") {
     if (closeAllOverlays()) e.preventDefault();
     return;
   }
 
-  // 修饰键组合：在任何位置都生效
   if (mod) {
     if (e.key.toLowerCase() === "k" || e.key === "/") {
       e.preventDefault();
@@ -137,9 +172,7 @@ function onKeydown(e: KeyboardEvent) {
     return;
   }
 
-  // 文本输入态下，下面的"裸键"快捷键不响应
   if (inText) return;
-  // 弹窗已经打开时，不再触发"裸键"导航
   if (editing.value || searchOpen.value || statsOpen.value || settingsOpen.value || shortcutsOpen.value) return;
 
   switch (e.key) {
@@ -160,24 +193,39 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown));
 <template>
   <LoginPanel v-if="view === 'login'" />
   <OnboardingPanel v-else-if="view === 'onboard'" />
-  <div v-else class="layout" :class="{ collapsed: sidebarCollapsed }">
+  <div
+    v-else
+    class="layout"
+    :class="{ collapsed: sidebarCollapsed, mobile: isMobile, 'sidebar-open': isMobile && !sidebarCollapsed }"
+  >
     <TopBar
+      :compact="isMobile"
       @open-settings="settingsOpen = true"
       @open-search="searchOpen = true"
       @open-stats="statsOpen = true"
       @open-shortcuts="shortcutsOpen = true"
       @toggle-sidebar="toggleSidebar"
     />
+
+    <!-- 移动端遮罩：点了关侧栏抽屉 -->
+    <div
+      v-if="isMobile && !sidebarCollapsed"
+      class="side-overlay"
+      @click="sidebarCollapsed = true"
+    />
+
     <aside class="side">
       <div class="side-inner">
-        <MiniCalendar />
+        <MiniCalendar @click="closeSidebarOnMobile" />
         <TagSummary />
         <div class="quick">
-          <button class="quick-btn" @click="newEntryNow">＋ 新增条目</button>
-          <p class="quick-hint">点时间轴空白处也能创建 · 按 <kbd>?</kbd> 看快捷键</p>
+          <button class="quick-btn" @click="newEntryNow(); closeSidebarOnMobile();">＋ 新增条目</button>
+          <p class="quick-hint" v-if="!isMobile">点时间轴空白处也能创建 · 按 <kbd>?</kbd> 看快捷键</p>
+          <p class="quick-hint" v-else>点时间轴空白处也能创建</p>
         </div>
       </div>
     </aside>
+
     <main class="main">
       <div v-if="showTagBanner" class="tag-banner">
         <span class="banner-icon">
@@ -186,13 +234,23 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown));
           </svg>
         </span>
         <span class="banner-text">
-          先创建几个标签，让条目更有组织感（也能用颜色区分）
+          先创建几个标签，让条目更有组织感
         </span>
         <button class="banner-cta" @click="openSettingsAndDismiss">去设置</button>
         <button class="banner-x" @click="dismissTagBanner" aria-label="关闭">×</button>
       </div>
       <Timeline @click-entry="openEditor" @add-at="(t: { start: string; end: string }) => newEntryAt(t.start, t.end)" />
     </main>
+
+    <!-- 移动端浮动新建按钮 -->
+    <button
+      v-if="isMobile && !editing && !searchOpen && !statsOpen && !settingsOpen && !shortcutsOpen"
+      class="fab"
+      @click="newEntryNow"
+      aria-label="新增条目"
+    >
+      <Icon name="plus" :size="22" />
+    </button>
 
     <div v-if="editing" class="modal-bg" @click.self="closeEditor">
       <div class="modal">
@@ -227,10 +285,12 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown));
 
 <style scoped>
 .layout {
-  display: grid; grid-template-rows: auto 1fr;
+  display: grid;
+  grid-template-rows: auto 1fr;
   grid-template-columns: 280px 1fr;
   height: 100vh;
-  transition: grid-template-columns .2s ease;
+  height: 100dvh;
+  transition: grid-template-columns 0.2s ease;
 }
 .layout.collapsed { grid-template-columns: 0 1fr; }
 .layout > :deep(header) { grid-column: 1 / 3; }
@@ -246,6 +306,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown));
 }
 .layout.collapsed .side { border-right-width: 0; }
 .main { overflow-y: auto; }
+
 .tag-banner {
   display: flex;
   align-items: center;
@@ -260,13 +321,14 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown));
   color: var(--text);
 }
 .banner-icon { color: var(--accent); display: inline-flex; }
-.banner-text { flex: 1; }
+.banner-text { flex: 1; min-width: 0; }
 .banner-cta {
   padding: 4px 10px;
   font-size: 12px;
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
+  white-space: nowrap;
 }
 .banner-cta:hover {
   background: var(--accent-hover);
@@ -282,12 +344,14 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown));
   background: transparent;
   color: var(--text-faint);
   border-radius: 50%;
+  flex-shrink: 0;
 }
 .banner-x:hover { background: var(--bg); color: var(--text-muted); border-color: transparent; }
+
 .quick { padding: 14px; border-top: 1px solid var(--border); }
 .quick-btn {
   width: 100%;
-  padding: 8px 0;
+  padding: 10px 0;
   border-color: var(--border);
   font-weight: 500;
   color: var(--text);
@@ -312,6 +376,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown));
   border: 1px solid var(--border);
   border-radius: 3px;
 }
+
 .modal-bg {
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.25);
@@ -325,20 +390,104 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown));
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
   max-height: 90vh;
+  max-height: 90dvh;
   overflow: auto;
   animation: pop 0.18s ease;
 }
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pop {
   from { opacity: 0; transform: scale(0.97); }
   to { opacity: 1; transform: scale(1); }
 }
 
+/* === 移动端：< 720px === */
 @media (max-width: 720px) {
-  .layout { grid-template-columns: 1fr; }
-  .side { display: none; }
+  .layout {
+    grid-template-columns: 1fr;     /* 单列：main 占满 */
+  }
+  .layout.collapsed { grid-template-columns: 1fr; }
+
+  /* 侧栏变成从左滑入的抽屉，覆盖在 main 之上 */
+  .side {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: min(280px, 84vw);
+    z-index: 70;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    border-right: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+  }
+  .layout.sidebar-open .side {
+    transform: translateX(0);
+  }
+  .side-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 65;
+    animation: fadeIn 0.15s ease;
+  }
+  .side-inner {
+    width: 100%;
+  }
+
+  .tag-banner {
+    margin: 8px 12px 0 12px;
+    padding: 8px 10px;
+    font-size: 12.5px;
+  }
+  .banner-cta { padding: 4px 8px; }
+
+  /* 浮动新建按钮 */
+  .fab {
+    position: fixed;
+    right: 18px;
+    bottom: max(20px, env(safe-area-inset-bottom, 20px));
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    box-shadow: var(--shadow-lg);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform var(--transition), background var(--transition);
+  }
+  .fab:hover { background: var(--accent-hover); color: #fff; border-color: transparent; }
+  .fab:active { transform: scale(0.96); }
+
+  /* modal 全屏化（除 SearchPanel 自带抽屉，这里不影响它） */
+  .modal-bg {
+    place-items: stretch;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--bg);
+  }
+  .modal {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+    animation: slideUp 0.22s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(8px); opacity: 0.85; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  /* 子组件 panel 的 min-width 在 mobile 上失效 */
+  .modal :deep(.settings),
+  .modal :deep(.stats),
+  .modal :deep(.editor),
+  .modal :deep(.shortcuts) {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
 }
 </style>
