@@ -379,7 +379,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown));
 
 .modal-bg {
   position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--scrim);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: grid; place-items: center; z-index: 100;
@@ -424,7 +424,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown));
   .side-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.35);
+    background: var(--scrim);
     z-index: 65;
     animation: fadeIn 0.15s ease;
   }

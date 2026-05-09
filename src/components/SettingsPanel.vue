@@ -545,7 +545,7 @@ const monthsCount = computed(() => Object.keys(store.state.months).length);
 .tag-row:hover .tag-actions .icon-btn.delete { opacity: 1; }
 .tag-actions .icon-btn.delete:hover {
   color: var(--danger);
-  background: rgba(192, 57, 43, 0.1);
+  background: var(--danger-soft);
 }
 .confirm-text {
   font-size: 12px;
@@ -574,8 +574,8 @@ const monthsCount = computed(() => Object.keys(store.state.months).length);
   gap: 4px;
 }
 .danger.primary-danger:hover {
-  background: #a8331f;
-  border-color: #a8331f;
+  background: var(--danger-hover);
+  border-color: var(--danger-hover);
   color: #fff;
 }
 

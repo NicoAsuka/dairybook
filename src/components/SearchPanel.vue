@@ -166,7 +166,7 @@ function formatDateLabel(d: string): string {
 <style scoped>
 .drawer {
   position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--scrim);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex; justify-content: flex-end;
@@ -184,7 +184,7 @@ function formatDateLabel(d: string): string {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-lg);
   animation: slideIn 0.2s ease;
 }
 

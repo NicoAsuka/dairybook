@@ -49,9 +49,9 @@ function onClick() {
 }
 .pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .pill.saving { color: var(--accent); }
-.pill.saved { color: #4caf7a; }
-.pill.error { color: #c0392b; cursor: pointer; border-color: #c0392b40; }
-.pill.error:hover { background: #c0392b10; }
-.pill.offline { color: #d97706; border-color: #d9770640; background: #fff7ed; }
+.pill.saved { color: var(--success); }
+.pill.error { color: var(--danger); cursor: pointer; border-color: var(--danger-soft); }
+.pill.error:hover { background: var(--danger-soft); }
+.pill.offline { color: var(--warning); border-color: var(--warning-soft); background: var(--warning-soft); }
 .pill:disabled { cursor: default; }
 </style>

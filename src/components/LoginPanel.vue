@@ -181,9 +181,9 @@ function reset() {
 .primary {
   width: 100%;
   padding: 11px;
-  background: var(--text);
+  background: var(--accent);
   color: #fff;
-  border-color: var(--text);
+  border-color: var(--accent);
   font-weight: 500;
   display: inline-flex;
   align-items: center;
@@ -191,9 +191,9 @@ function reset() {
   gap: 8px;
 }
 .primary:hover {
-  background: #000;
+  background: var(--accent-hover);
   color: #fff;
-  border-color: #000;
+  border-color: var(--accent-hover);
 }
 
 .steps {
@@ -286,7 +286,7 @@ function reset() {
   gap: 6px;
   margin-top: 16px;
   padding: 10px 12px;
-  background: rgba(192, 57, 43, 0.08);
+  background: var(--danger-soft);
   border-radius: 6px;
   color: var(--danger);
   font-size: 12px;

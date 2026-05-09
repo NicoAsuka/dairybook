@@ -2,6 +2,7 @@
 import DateNav from "./DateNav.vue";
 import SyncStatusPill from "./SyncStatusPill.vue";
 import Icon from "./Icon.vue";
+import ThemeToggle from "./ThemeToggle.vue";
 import { useStore } from "@/lib/store";
 import { computed } from "vue";
 
@@ -41,6 +42,7 @@ const userLabel = computed(() =>
       <button v-if="!compact" class="icon-btn" @click="$emit('open-stats')" aria-label="统计">
         <Icon name="stats" />
       </button>
+      <ThemeToggle />
       <button v-if="!compact" class="icon-btn" @click="$emit('open-shortcuts')" aria-label="键盘快捷键" title="键盘快捷键 (?)">
         <Icon name="keyboard" />
       </button>

@@ -215,7 +215,7 @@ onUnmounted(() => document.removeEventListener("keydown", onKeydown));
   font-weight: 500;
 }
 .duration.error {
-  background: rgba(192, 57, 43, 0.08);
+  background: var(--danger-soft);
   color: var(--danger);
 }
 
@@ -330,7 +330,7 @@ textarea {
   border-color: transparent;
 }
 .danger:hover {
-  background: rgba(192, 57, 43, 0.08);
+  background: var(--danger-soft);
   border-color: transparent;
   color: var(--danger);
 }

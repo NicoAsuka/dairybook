@@ -1,4 +1,5 @@
-:root {
+:root,
+:root[data-theme="light"] {
   --bg: #f7f7f8;
   --bg-elevated: #ffffff;
   --bg-subtle: #fafafa;
@@ -11,15 +12,51 @@
   --accent-soft: rgba(90, 141, 238, 0.08);
   --accent-hover: #4a7ddc;
   --danger: #c0392b;
+  --danger-soft: rgba(192, 57, 43, 0.08);
+  --danger-hover: #a8331f;
+  --warning: #d97706;
+  --warning-soft: #fff7ed;
+  --success: #4caf7a;
   --color-default: #9aa0a6;
 
-  --radius: 6px;
-  --radius-sm: 4px;
+  --scrim: rgba(0, 0, 0, 0.25);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.14);
 
+  --radius: 6px;
+  --radius-sm: 4px;
   --transition: 0.15s ease;
+
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f1115;
+  --bg-elevated: #181b22;
+  --bg-subtle: #14171d;
+  --border: #262a33;
+  --border-strong: #383d48;
+  --text: #e6e8eb;
+  --text-muted: #9ba3ad;
+  --text-faint: #5d6470;
+  --accent: #6ea1ff;
+  --accent-soft: rgba(110, 161, 255, 0.14);
+  --accent-hover: #84b1ff;
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.12);
+  --danger-hover: #ef4444;
+  --warning: #f59e0b;
+  --warning-soft: rgba(245, 158, 11, 0.1);
+  --success: #4ade80;
+  --color-default: #6b7280;
+
+  --scrim: rgba(0, 0, 0, 0.55);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+
+  color-scheme: dark;
 }
 
 * {
@@ -42,6 +79,7 @@ body {
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background var(--transition), color var(--transition);
 }
 
 button {
@@ -61,18 +99,9 @@ button:hover {
   border-color: var(--accent);
   color: var(--accent);
 }
-button:active {
-  transform: translateY(0.5px);
-}
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-  transform: none;
-}
-button:disabled:hover {
-  border-color: var(--border-strong);
-  color: var(--text);
-}
+button:active { transform: translateY(0.5px); }
+button:disabled { cursor: not-allowed; opacity: 0.5; transform: none; }
+button:disabled:hover { border-color: var(--border-strong); color: var(--text); }
 
 input,
 textarea {
@@ -85,9 +114,7 @@ textarea {
   transition: border-color var(--transition);
 }
 input:hover,
-textarea:hover {
-  border-color: var(--text-faint);
-}
+textarea:hover { border-color: var(--text-faint); }
 input:focus,
 textarea:focus {
   outline: none;
@@ -95,24 +122,18 @@ textarea:focus {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
+/* 暗色下原生 input[type=date]、type=color 也跟随 color-scheme 切换样式（依赖 :root color-scheme） */
+
 ::selection {
   background: var(--accent-soft);
   color: var(--text);
 }
 
-/* 自定义滚动条（webkit） */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
+::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb {
   background: var(--border-strong);
   border-radius: 5px;
   border: 2px solid var(--bg);
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-faint);
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+::-webkit-scrollbar-track { background: transparent; }
